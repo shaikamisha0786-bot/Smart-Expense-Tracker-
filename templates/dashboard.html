@@ -1,0 +1,632 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid">
+    <div id="global-toasts" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 2000;"></div>
+    
+    {% if alerts %}
+    <div class="row mb-4">
+        <div class="col-12">
+            {% for alert in alerts %}
+            <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-2" role="alert" style="border-radius: 12px; background: var(--accent-danger); color: white;">
+                <i class="fas fa-exclamation-triangle me-2"></i><strong>{{ alert }}</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Hidden reminders data for JS to pick up -->
+    <div id="reminders-data" data-reminders='{{ reminders | tojson | safe }}'></div>
+
+    <!-- 1. HOME SECTION -->
+    <div id="home" class="section-anchor">
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card p-4 border-0 text-white shadow-lg" style="background: linear-gradient(135deg, #0064e0, #004fb3);">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="m-0 opacity-75 fw-bold">DAILY BUDGET</h6>
+                        <i class="fas fa-calendar-day fs-4 opacity-50"></i>
+                    </div>
+                    <h2 class="fw-bold mb-3">₹{{ total_daily|round(2) }}</h2>
+                    <div class="progress mb-3" style="height: 6px; background: rgba(255,255,255,0.2); border-radius: 10px;">
+                        <div class="progress-bar bg-white" role="progressbar" style="width: {{ (total_daily / (user.budget_daily or 1)) * 100 }}%; border-radius: 10px;"></div>
+                    </div>
+                    <div class="input-group input-group-sm bg-white rounded-pill p-1">
+                        <input type="number" id="budget_daily" class="form-control border-0 bg-transparent px-3" value="{{ user.budget_daily }}" placeholder="Set daily budget">
+                        <button class="btn btn-primary rounded-pill px-3 fw-bold" onclick="updateBudget('daily')">SAVE</button>
+                    </div>
+                    <div id="budget-toasts" class="toast-container mt-2"></div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card p-4 border-0 text-white shadow-lg" style="background: linear-gradient(135deg, #ffba00, #e6a800);">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="m-0 opacity-75 fw-bold">WEEKLY BUDGET</h6>
+                        <i class="fas fa-calendar-week fs-4 opacity-50"></i>
+                    </div>
+                    <h2 class="fw-bold mb-3">₹{{ total_weekly|round(2) }}</h2>
+                    <div class="progress mb-3" style="height: 6px; background: rgba(255,255,255,0.2); border-radius: 10px;">
+                        <div class="progress-bar bg-white" role="progressbar" style="width: {{ (total_weekly / (user.budget_weekly or 1)) * 100 }}%; border-radius: 10px;"></div>
+                    </div>
+                    <div class="input-group input-group-sm bg-white rounded-pill p-1">
+                        <input type="number" id="budget_weekly" class="form-control border-0 bg-transparent px-3" value="{{ user.budget_weekly }}" placeholder="Set weekly budget">
+                        <button class="btn btn-warning rounded-pill px-3 text-white fw-bold" onclick="updateBudget('weekly')">SAVE</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card p-4 border-0 text-white shadow-lg" style="background: linear-gradient(135deg, #00a400, #008a00);">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="m-0 opacity-75 fw-bold">MONTHLY BUDGET</h6>
+                        <i class="fas fa-calendar-alt fs-4 opacity-50"></i>
+                    </div>
+                    <h2 class="fw-bold mb-3">₹{{ total_monthly|round(2) }}</h2>
+                    <div class="progress mb-3" style="height: 6px; background: rgba(255,255,255,0.2); border-radius: 10px;">
+                        <div class="progress-bar bg-white" role="progressbar" style="width: {{ (total_monthly / (user.budget_monthly or 1)) * 100 }}%; border-radius: 10px;"></div>
+                    </div>
+                    <div class="input-group input-group-sm bg-white rounded-pill p-1">
+                        <input type="number" id="budget_monthly" class="form-control border-0 bg-transparent px-3" value="{{ user.budget_monthly }}" placeholder="Set monthly budget">
+                        <button class="btn btn-success rounded-pill px-3 fw-bold" onclick="updateBudget('monthly')">SAVE</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-5">
+            <!-- Add Expense Section -->
+            <div class="col-md-6">
+                <div class="card p-4 h-100 border-0 shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="m-0 fw-bold"><i class="fas fa-plus-circle text-primary me-2"></i>Add Expense</h5>
+                        <div id="add-expense-toasts" class="toast-container"></div>
+                    </div>
+                    <form action="{{ url_for('add_expense') }}" method="POST">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label small fw-bold text-muted">AMOUNT (₹)</label>
+                                <input type="number" name="amount" class="form-control form-control-lg fw-bold" step="0.01" required placeholder="0.00">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label small fw-bold text-muted">DATE</label>
+                                <input type="date" name="date" id="expense_date" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">DESCRIPTION</label>
+                            <input type="text" name="description" class="form-control" placeholder="What was this for?" required>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="form-label small fw-bold text-muted">PAYMENT METHOD</label>
+                                <select name="payment_method" class="form-select" id="payment_method" onchange="toggleBankSelect()">
+                                    <option value="Cash">💵 Cash</option>
+                                    <option value="UPI">📱 UPI</option>
+                                    <option value="Card">💳 Card</option>
+                                    <option value="Bank">🏦 Bank</option>
+                                </select>
+                            </div>
+                            <div class="col-6" id="bank_select_div" style="display:none;">
+                                <label class="form-label small fw-bold text-muted">SELECT BANK</label>
+                                <select name="bank_id" class="form-select">
+                                    {% for bank in banks %}
+                                    <option value="{{ bank.id }}">{{ bank.name }} (₹{{ bank.balance }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <input type="hidden" name="mood" value="Normal">
+                        <button type="submit" class="btn btn-primary w-100 py-3 rounded-pill fw-bold shadow-sm transition-all">
+                            ADD EXPENSE
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <!-- Quick Glance Chart -->
+            <div class="col-md-6">
+                <div class="card p-4 h-100 border-0 shadow-sm">
+                    <h5 class="fw-bold mb-4"><i class="fas fa-chart-pie text-primary me-2"></i>Quick Glance</h5>
+                    <canvas id="miniPieChart" style="max-height: 250px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. MY ACCOUNTS SECTION -->
+    <div id="accounts" class="section-anchor">
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="card p-4 border-0 shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="m-0 fw-bold"><i class="fas fa-university text-primary me-2"></i>My Accounts</h5>
+                        <button class="btn btn-primary btn-sm rounded-pill px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#addBankModal">
+                            <i class="fas fa-plus me-2"></i>ADD BANK
+                        </button>
+                    </div>
+                    <div class="row g-4">
+                        {% for bank in banks %}
+                        <div class="col-md-4">
+                            <div class="p-4 rounded-4 bg-light border-start border-4 border-primary shadow-sm h-100 position-relative">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <div>
+                                        <h6 class="m-0 fw-bold text-dark fs-5">{{ bank.name }}</h6>
+                                        <span class="badge bg-primary-subtle text-primary rounded-pill mt-1">{{ bank.type }}</span>
+                                    </div>
+                                    <div class="dropdown">
+                                        <button class="btn btn-link text-muted p-0" data-bs-toggle="dropdown">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
+                                            <li><button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#editBank{{ bank.id }}"><i class="fas fa-edit me-2"></i>Edit</button></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item text-danger" href="{{ url_for('delete_bank', id=bank.id) }}" onclick="return confirm('Delete account?')"><i class="fas fa-trash-alt me-2"></i>Delete</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <small class="text-muted d-block mb-1">CURRENT BALANCE</small>
+                                    <h3 class="fw-bold text-primary mb-0">₹{{ bank.balance|round(2) }}</h3>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Edit Bank Modal -->
+                        <div class="modal fade" id="editBank{{ bank.id }}" tabindex="-1">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content border-0 shadow-lg rounded-4">
+                                    <div class="modal-header border-0 p-4 pb-0">
+                                        <h5 class="modal-title fw-bold">Edit Account</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <form action="{{ url_for('edit_bank', id=bank.id) }}" method="POST">
+                                        <div class="modal-body p-4">
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-bold text-muted">ACCOUNT NAME</label>
+                                                <input type="text" name="name" class="form-control" value="{{ bank.name }}" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-bold text-muted">CURRENT BALANCE (₹)</label>
+                                                <input type="number" name="balance" class="form-control" value="{{ bank.balance }}" required>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer border-0 p-4 pt-0">
+                                            <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold py-2">UPDATE ACCOUNT</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Bank Modal -->
+        <div class="modal fade" id="addBankModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg rounded-4">
+                    <div class="modal-header border-0 p-4 pb-0">
+                        <h5 class="modal-title fw-bold">Add Bank Account</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form action="{{ url_for('add_bank') }}" method="POST">
+                        <div class="modal-body p-4">
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold text-muted">ACCOUNT NAME</label>
+                                <input type="text" name="name" class="form-control" placeholder="e.g. HDFC Bank" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold text-muted">INITIAL BALANCE (₹)</label>
+                                <input type="number" name="balance" class="form-control" placeholder="0.00" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold text-muted">ACCOUNT TYPE</label>
+                                <select name="type" class="form-select">
+                                    <option value="Savings">Savings</option>
+                                    <option value="Checking">Checking</option>
+                                    <option value="Credit Card">Credit Card</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0 p-4 pt-0">
+                            <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold py-2">ADD ACCOUNT</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. HISTORY SECTION -->
+    <div id="history" class="section-anchor">
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="card p-4 border-0 shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+                        <h5 class="m-0 fw-bold"><i class="fas fa-history text-primary me-2"></i>Expense History</h5>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <a href="{{ url_for('export_pdf', category=selected_category, start_date=start_date, end_date=end_date) }}" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-bold">
+                                <i class="fas fa-file-pdf me-2"></i>EXPORT PDF
+                            </a>
+                            <form class="d-flex gap-2" method="get">
+                                <input type="text" name="search" class="form-control form-control-sm rounded-pill px-3" placeholder="Search..." style="width: 150px;">
+                                <select name="category" class="form-select form-select-sm rounded-pill shadow-sm">
+                                    <option value="">ALL CATEGORIES</option>
+                                    {% for c in categories %}
+                                        <option value="{{ c }}" {% if selected_category==c %}selected{% endif %}>{{ c }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm" type="submit">FILTER</button>
+                            </form>
+                        </div>
+                        <div id="history-toasts" class="toast-container"></div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="bg-light text-muted small text-uppercase fw-bold">
+                                <tr>
+                                    <th class="border-0">DATE</th>
+                                    <th class="border-0">DESCRIPTION</th>
+                                    <th class="border-0">CATEGORY</th>
+                                    <th class="border-0">AMOUNT</th>
+                                    <th class="border-0">METHOD</th>
+                                    <th class="border-0 text-end">ACTION</th>
+                                </tr>
+                            </thead>
+                            <tbody class="border-0">
+                                {% for expense in expenses %}
+                                <tr class="transition-all">
+                                    <td class="text-muted small border-0">{{ expense.date.strftime('%b %d, %Y') }}</td>
+                                    <td class="fw-bold border-0">{{ expense.description }}</td>
+                                    <td class="border-0"><span class="badge bg-light text-dark rounded-pill px-3 shadow-sm">{{ expense.category }}</span></td>
+                                    <td class="text-danger fw-bold border-0">₹{{ expense.amount }}</td>
+                                    <td class="text-muted small border-0">{{ expense.payment_method }}</td>
+                                    <td class="text-end border-0">
+                                        <a href="{{ url_for('delete_expense', id=expense.id) }}" class="btn btn-light btn-sm rounded-circle text-danger shadow-sm" 
+                                           onclick="return confirm('Delete this record?')">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-5 text-muted">
+                                        <i class="fas fa-receipt fa-4x mb-3 opacity-10"></i>
+                                        <p class="fw-bold">No transactions found.</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. ANALYTICS SECTION -->
+    <div id="analytics" class="section-anchor">
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="card p-4 border-0 shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="m-0 fw-bold"><i class="fas fa-chart-line text-primary me-2"></i>Advanced Analytics</h5>
+                        <select id="rangeSelect" class="form-select form-select-sm w-auto rounded-pill px-3 shadow-sm">
+                            <option value="daily">DAILY VIEW</option>
+                            <option value="weekly">WEEKLY VIEW</option>
+                            <option value="monthly" selected>MONTHLY VIEW</option>
+                        </select>
+                    </div>
+                    <div class="row g-4">
+                        <div class="col-md-8">
+                            <div class="p-3 rounded-4 bg-light mb-4">
+                                <h6 class="fw-bold mb-3 small text-muted">SPENDING TREND</h6>
+                                <canvas id="lineChart" style="max-height: 300px;"></canvas>
+                            </div>
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <div class="p-3 rounded-4 bg-light">
+                                        <h6 class="fw-bold mb-3 small text-muted">SPENDING FREQUENCY (Histogram)</h6>
+                                        <canvas id="histogramChart" style="max-height: 250px;"></canvas>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="p-3 rounded-4 bg-light">
+                                        <h6 class="fw-bold mb-3 small text-muted">SPENDING PATTERNS (Scatter)</h6>
+                                        <canvas id="scatterChart" style="max-height: 250px;"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 rounded-4 bg-light mb-4">
+                                <h6 class="fw-bold mb-3 small text-muted">CATEGORY DISTRIBUTION</h6>
+                                <canvas id="pieChart" style="max-height: 250px;"></canvas>
+                            </div>
+                            <div class="p-3 rounded-4 bg-light">
+                                <h6 class="fw-bold mb-3 small text-muted">BANK-WISE ANALYSIS</h6>
+                                <canvas id="bankChart" style="max-height: 250px;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. CHALLENGES SECTION -->
+    <div id="challenges" class="section-anchor">
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="card p-4 border-0 shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="m-0 fw-bold"><i class="fas fa-bullseye text-primary me-2"></i>Smart Challenges</h5>
+                        <div id="challenges-toasts" class="toast-container"></div>
+                    </div>
+                    <div class="row g-3">
+                        {% for ch in user_challenges %}
+                        <div class="col-md-4 col-lg-3">
+                            <div class="p-3 rounded-4 border {{ 'bg-success text-white border-0 shadow' if ch.claimed else 'bg-light' }} transition-all h-100">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="m-0 fw-bold">{{ ch.name }}</h6>
+                                    {% if ch.claimed %}
+                                    <i class="fas fa-check-circle fs-5"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="progress mb-2" style="height: 6px; background: rgba(0,0,0,0.05);">
+                                    <div class="progress-bar {{ 'bg-white' if ch.claimed else 'bg-primary' }}" style="width: {{ (ch.current / ch.target) * 100 }}%"></div>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <small class="fw-bold">{{ ch.current }}/{{ ch.target }}</small>
+                                    <button class="btn {{ 'btn-light disabled' if ch.claimed else 'btn-primary' }} btn-sm rounded-pill px-3 py-1 fw-bold claim-ch" 
+                                            data-id="{{ ch.id }}" {{ 'disabled' if not ch.completed or ch.claimed }}>
+                                        {{ 'CLAIMED' if ch.claimed else 'CLAIM' }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. BADGES SECTION -->
+    <div id="badges" class="section-anchor">
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="card p-4 border-0 shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="m-0 fw-bold"><i class="fas fa-award text-primary me-2"></i>Achievement Badges</h5>
+                        <div id="badge-toasts" class="toast-container"></div>
+                    </div>
+                    <div class="row g-4 justify-content-center">
+                        {% set badge_icons = {
+                            'beginner': 'fa-seedling text-success',
+                            'saver': 'fa-piggy-bank text-warning',
+                            'consistent_user': 'fa-calendar-check text-info',
+                            'budget_master': 'fa-crown text-primary',
+                            'tracker_pro': 'fa-trophy text-danger',
+                            'smart_spender': 'fa-brain text-info',
+                            'daily_tracker': 'fa-check-circle text-success',
+                            'weekly_champion': 'fa-medal text-warning',
+                            'monthly_master': 'fa-star text-primary',
+                            'finance_expert': 'fa-user-tie text-dark'
+                        } %}
+                        {% set all_badge_ids = ['beginner', 'saver', 'consistent_user', 'budget_master', 'tracker_pro', 'smart_spender', 'daily_tracker', 'weekly_champion', 'monthly_master', 'finance_expert'] %}
+                        
+                        {% for bid in all_badge_ids %}
+                            {% set badge = user_badges | selectattr('id', 'equalto', bid) | first %}
+                            <div class="col-6 col-md-3 col-lg-2 text-center">
+                                <div class="badge-wrapper p-4 rounded-4 {{ 'bg-light shadow-sm' if badge else 'opacity-25 grayscale' }} transition-all border border-transparent hover-shadow">
+                                    <div class="badge-icon mb-3">
+                                        <i class="fas {{ badge_icons[bid] }} fa-3x"></i>
+                                    </div>
+                                    <div class="small fw-bold text-dark">{{ bid.replace('_', ' ').title() }}</div>
+                                    {% if badge %}
+                                    <div class="mt-2"><span class="badge bg-success rounded-pill x-small">EARNED</span></div>
+                                    {% else %}
+                                    <div class="mt-2"><span class="badge bg-secondary rounded-pill x-small">LOCKED</span></div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let mainCharts = {};
+
+    function updateBudget(type) {
+        const val = document.getElementById('budget_' + type).value;
+        fetch('/update_budget', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({type: type, value: parseFloat(val)})
+        }).then(r => r.json()).then(data => {
+            if (data.status === 'success') {
+                showToast('Budget Updated Successfully', 'success', 'global-toasts');
+            }
+        });
+    }
+
+    function toggleBankSelect() {
+        const method = document.getElementById('payment_method').value;
+        const bankDiv = document.getElementById('bank_select_div');
+        bankDiv.style.display = (method === 'Bank' || method === 'UPI') ? 'block' : 'none';
+    }
+
+    function initCharts(data) {
+        const isDark = document.body.getAttribute('data-theme') === 'dark';
+        const textColor = isDark ? '#ffffff' : '#1a1d21';
+        const mutedColor = isDark ? '#b0b3c1' : '#65676b';
+        const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+
+        // Cleanup
+        Object.values(mainCharts).forEach(c => c && c.destroy());
+
+        const commonOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { 
+                legend: { labels: { color: textColor, font: { weight: '600', family: 'Inter' } } },
+                tooltip: { backgroundColor: isDark ? '#2c2c3e' : '#fff', titleColor: textColor, bodyColor: textColor, borderColor: gridColor, borderWidth: 1 }
+            },
+            scales: {
+                x: { ticks: { color: mutedColor }, grid: { display: false } },
+                y: { ticks: { color: mutedColor }, grid: { color: gridColor } }
+            }
+        };
+
+        // 1. Line Chart (Trend)
+        mainCharts.line = new Chart(document.getElementById('lineChart'), {
+            type: 'line',
+            data: {
+                labels: data.trend.labels,
+                datasets: [{
+                    label: 'Spending',
+                    data: data.trend.data,
+                    borderColor: '#0064e0',
+                    backgroundColor: 'rgba(0, 100, 224, 0.1)',
+                    fill: true, tension: 0.4, pointRadius: 4, pointHoverRadius: 6
+                }]
+            },
+            options: commonOptions
+        });
+
+        // 2. Pie Chart (Distribution)
+        mainCharts.pie = new Chart(document.getElementById('pieChart'), {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(data.categories),
+                datasets: [{
+                    data: Object.values(data.categories),
+                    backgroundColor: ['#0064e0', '#ffba00', '#00a400', '#fa3e3e', '#6610f2', '#fd7e14', '#20c997', '#e83e8c'],
+                    borderWidth: 0
+                }]
+            },
+            options: { ...commonOptions, cutout: '70%' }
+        });
+
+        // 3. Bar Chart (Bank Analysis)
+        mainCharts.bank = new Chart(document.getElementById('bankChart'), {
+            type: 'bar',
+            data: {
+                labels: Object.keys(data.bank_spending || {}),
+                datasets: [{
+                    label: 'Spending by Account',
+                    data: Object.values(data.bank_spending || {}),
+                    backgroundColor: '#6610f2',
+                    borderRadius: 8
+                }]
+            },
+            options: commonOptions
+        });
+
+        // 4. Histogram (Frequency)
+        mainCharts.histogram = new Chart(document.getElementById('histogramChart'), {
+            type: 'bar',
+            data: {
+                labels: Object.keys(data.frequency || {}),
+                datasets: [{
+                    label: 'Count of Expenses',
+                    data: Object.values(data.frequency || {}),
+                    backgroundColor: '#ffba00',
+                    borderRadius: 4
+                }]
+            },
+            options: { ...commonOptions, scales: { ...commonOptions.scales, x: { ...commonOptions.scales.x, grid: { display: false } } } }
+        });
+
+        // 5. Scatter Plot (Patterns)
+        mainCharts.scatter = new Chart(document.getElementById('scatterChart'), {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'Expense vs Hour',
+                    data: data.patterns,
+                    backgroundColor: '#00a400'
+                }]
+            },
+            options: {
+                ...commonOptions,
+                scales: {
+                    x: { title: { display: true, text: 'Hour of Day', color: textColor }, ticks: { color: textColor }, grid: { color: gridColor } },
+                    y: { title: { display: true, text: 'Amount (₹)', color: textColor }, ticks: { color: textColor }, grid: { color: gridColor } }
+                }
+            }
+        });
+
+        // Mini Pie for Dashboard Glance
+        mainCharts.mini = new Chart(document.getElementById('miniPieChart'), {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(data.categories),
+                datasets: [{
+                    data: Object.values(data.categories),
+                    backgroundColor: ['#0064e0', '#ffba00', '#00a400', '#fa3e3e', '#6610f2', '#fd7e14', '#20c997'],
+                    borderWidth: 0
+                }]
+            },
+            options: { ...commonOptions, cutout: '75%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
+        });
+    }
+
+    function loadData(range = 'monthly') {
+        fetch('/api/dashboard_data?range=' + range)
+            .then(r => r.json())
+            .then(data => initCharts(data));
+    }
+
+    document.querySelectorAll('.claim-ch').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const id = btn.dataset.id;
+            fetch('/claim_challenge', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id})
+            }).then(r => r.json()).then(res => {
+                if (res.status === 'success') {
+                    showToast(res.message, 'success', 'challenges-toasts');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showToast(res.message, 'danger', 'challenges-toasts');
+                }
+            });
+        });
+    });
+
+    window.updateChartsTheme = () => loadData(document.getElementById('rangeSelect').value);
+    document.getElementById('rangeSelect').addEventListener('change', (e) => loadData(e.target.value));
+    
+    (function() {
+        const today = new Date().toISOString().split('T')[0];
+        const dateInput = document.getElementById('expense_date');
+        if (dateInput) dateInput.value = today;
+        loadData('monthly');
+        toggleBankSelect();
+
+        try {
+            const reminders = JSON.parse(document.getElementById('reminders-data').dataset.reminders || '[]');
+            reminders.forEach(r => showToast(r, 'primary', 'global-toasts'));
+        } catch(e) {}
+    })();
+</script>
+
+<style>
+    .section-anchor { scroll-margin-top: 100px; padding-top: 20px; }
+    .grayscale { filter: grayscale(1); }
+    .transition-all { transition: all 0.3s ease; }
+    .hover-shadow:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important; }
+    .badge-wrapper { border: 2px solid transparent; }
+    .bg-light { background-color: var(--bg) !important; }
+    .x-small { font-size: 0.65rem; padding: 0.35em 0.65em; }
+    .bg-primary-subtle { background-color: rgba(0, 100, 224, 0.1); }
+</style>
+{% endblock %}

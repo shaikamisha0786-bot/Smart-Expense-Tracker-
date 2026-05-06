@@ -1,0 +1,464 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <h2 class="fw-bold text-primary m-0"><i class="fas fa-user-shield me-2"></i>Admin: {{ user.username }}</h2>
+            <div class="dropdown">
+                <button class="btn btn-outline-primary btn-sm rounded-pill px-3 dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    Switch User
+                </button>
+                <ul class="dropdown-menu shadow border-0 rounded-3">
+                    {% for u in all_users %}
+                    <li><a class="dropdown-item {{ 'active' if u.id == user.id }}" href="{{ url_for('admin_user_dashboard', user_id=u.id) }}">{{ u.username }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <a href="{{ url_for('admin_panel') }}" class="btn btn-light rounded-pill px-4 shadow-sm border"><i class="fas fa-arrow-left me-2"></i>BACK TO PANEL</a>
+    </div>
+
+    <!-- Quick Navigation Tabs -->
+    <div class="card mb-4 border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="bg-primary p-1">
+            <ul class="nav nav-pills nav-justified" id="userTabs" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active text-white fw-bold py-3 border-0 rounded-0" data-bs-toggle="pill" data-bs-target="#tab-home"><i class="fas fa-home me-2"></i>HOME</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link text-white fw-bold py-3 border-0 rounded-0" data-bs-toggle="pill" data-bs-target="#tab-accounts"><i class="fas fa-university me-2"></i>ACCOUNTS</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link text-white fw-bold py-3 border-0 rounded-0" data-bs-toggle="pill" data-bs-target="#tab-history"><i class="fas fa-history me-2"></i>HISTORY</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link text-white fw-bold py-3 border-0 rounded-0" data-bs-toggle="pill" data-bs-target="#tab-analytics"><i class="fas fa-chart-line me-2"></i>ANALYTICS</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link text-white fw-bold py-3 border-0 rounded-0" data-bs-toggle="pill" data-bs-target="#tab-challenges"><i class="fas fa-bullseye me-2"></i>CHALLENGES</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link text-white fw-bold py-3 border-0 rounded-0" data-bs-toggle="pill" data-bs-target="#tab-badges"><i class="fas fa-award me-2"></i>BADGES</button>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="tab-content">
+        <!-- 1. HOME SECTION -->
+        <div class="tab-pane fade show active" id="tab-home">
+            <div class="row g-4 mb-4">
+                <div class="col-md-4">
+                    <div class="card p-4 border-0 text-white shadow-lg h-100" style="background: linear-gradient(135deg, #0064e0, #004fb3);">
+                        <h6 class="m-0 opacity-75 fw-bold">DAILY BUDGET</h6>
+                        <h2 class="fw-bold my-3">₹{{ total_daily|round(2) }}</h2>
+                        <div class="progress mb-2" style="height: 8px; background: rgba(255,255,255,0.2); border-radius: 10px;">
+                            <div class="progress-bar bg-white" style="width: {{ (total_daily / (user.budget_daily or 1)) * 100 }}%; border-radius: 10px;"></div>
+                        </div>
+                        <small class="opacity-75 fw-bold">Limit: ₹{{ user.budget_daily }}</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card p-4 border-0 text-white shadow-lg h-100" style="background: linear-gradient(135deg, #ffba00, #e6a800);">
+                        <h6 class="m-0 opacity-75 fw-bold">WEEKLY BUDGET</h6>
+                        <h2 class="fw-bold my-3">₹{{ total_weekly|round(2) }}</h2>
+                        <div class="progress mb-2" style="height: 8px; background: rgba(255,255,255,0.2); border-radius: 10px;">
+                            <div class="progress-bar bg-white" style="width: {{ (total_weekly / (user.budget_weekly or 1)) * 100 }}%; border-radius: 10px;"></div>
+                        </div>
+                        <small class="opacity-75 fw-bold">Limit: ₹{{ user.budget_weekly }}</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card p-4 border-0 text-white shadow-lg h-100" style="background: linear-gradient(135deg, #00a400, #008a00);">
+                        <h6 class="m-0 opacity-75 fw-bold">MONTHLY BUDGET</h6>
+                        <h2 class="fw-bold my-3">₹{{ total_monthly|round(2) }}</h2>
+                        <div class="progress mb-2" style="height: 8px; background: rgba(255,255,255,0.2); border-radius: 10px;">
+                            <div class="progress-bar bg-white" style="width: {{ (total_monthly / (user.budget_monthly or 1)) * 100 }}%; border-radius: 10px;"></div>
+                        </div>
+                        <small class="opacity-75 fw-bold">Limit: ₹{{ user.budget_monthly }}</small>
+                    </div>
+                </div>
+            </div>
+            <div class="card p-4 border-0 shadow-sm rounded-4">
+                <h5 class="fw-bold mb-4 text-primary"><i class="fas fa-info-circle me-2"></i>General Overview</h5>
+                <div class="row g-4">
+                    <div class="col-md-6 border-end">
+                        <div class="p-3 bg-light rounded-4">
+                            <label class="small text-muted fw-bold d-block mb-1">TOTAL EXPENSES (ALL TIME)</label>
+                            <h3 class="fw-bold text-danger mb-0">₹{{ expenses|sum(attribute='amount')|round(2) }}</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 bg-light rounded-4">
+                            <label class="small text-muted fw-bold d-block mb-1">ACCOUNT JOINED</label>
+                            <h3 class="fw-bold text-primary mb-0">{{ user.joined_date.strftime('%b %d, %Y') }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. MY ACCOUNTS SECTION -->
+        <div class="tab-pane fade" id="tab-accounts">
+            <div class="card p-4 border-0 shadow-sm rounded-4">
+                <h5 class="fw-bold mb-4 text-primary"><i class="fas fa-university me-2"></i>Bank Account Details</h5>
+                <div class="row g-4">
+                    {% for bank in banks %}
+                    <div class="col-12">
+                        <div class="p-4 rounded-4 bg-light border-start border-4 border-primary shadow-sm mb-4">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h5 class="fw-bold text-dark mb-1">{{ bank.name }}</h5>
+                                    <span class="badge bg-primary-subtle text-primary rounded-pill">{{ bank.type }}</span>
+                                </div>
+                                <div class="text-end">
+                                    <small class="text-muted d-block mb-1 fw-bold">CURRENT BALANCE</small>
+                                    <h3 class="fw-bold text-primary mb-0">₹{{ bank.balance|round(2) }}</h3>
+                                    <small class="text-muted fw-bold">Initial: ₹{{ bank.initial_balance }}</small>
+                                </div>
+                            </div>
+                            
+                            <h6 class="fw-bold mt-4 mb-3 text-muted small text-uppercase">Recent Transactions for this Account</h6>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="bg-light text-muted small">
+                                        <tr>
+                                            <th class="border-0">DATE</th>
+                                            <th class="border-0">DESCRIPTION</th>
+                                            <th class="border-0">CATEGORY</th>
+                                            <th class="border-0 text-end">AMOUNT</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for exp in bank_transactions[bank.id][:5] %}
+                                        <tr>
+                                            <td class="small text-muted border-0">{{ exp.date.strftime('%b %d, %Y') }}</td>
+                                            <td class="fw-bold text-dark border-0">{{ exp.description }}</td>
+                                            <td class="border-0"><span class="badge bg-light text-dark border shadow-sm">{{ exp.category }}</span></td>
+                                            <td class="text-end fw-bold text-danger border-0">₹{{ exp.amount }}</td>
+                                        </tr>
+                                        {% else %}
+                                        <tr><td colspan="4" class="text-center py-3 text-muted small">No transactions for this account.</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="col-12 text-center py-5">
+                        <i class="fas fa-university fa-4x text-muted opacity-25 mb-3"></i>
+                        <p class="text-muted fw-bold">No accounts found for this user.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. HISTORY SECTION -->
+        <div class="tab-pane fade" id="tab-history">
+            <div class="card p-4 border-0 shadow-sm rounded-4">
+                <h5 class="fw-bold mb-4 text-primary"><i class="fas fa-history me-2"></i>Full Expense Records</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="bg-light text-muted small text-uppercase">
+                            <tr>
+                                <th class="border-0">DATE</th>
+                                <th class="border-0">DESCRIPTION</th>
+                                <th class="border-0">CATEGORY</th>
+                                <th class="border-0">AMOUNT</th>
+                                <th class="border-0">METHOD</th>
+                                <th class="border-0">MOOD</th>
+                            </tr>
+                        </thead>
+                        <tbody class="border-0">
+                            {% for expense in expenses %}
+                            <tr>
+                                <td class="text-muted small border-0">{{ expense.date.strftime('%b %d, %Y %H:%M') }}</td>
+                                <td class="fw-bold border-0">{{ expense.description }}</td>
+                                <td class="border-0"><span class="badge bg-light text-dark rounded-pill px-3 border shadow-sm">{{ expense.category }}</span></td>
+                                <td class="text-danger fw-bold border-0">₹{{ expense.amount }}</td>
+                                <td class="text-muted small border-0">{{ expense.payment_method }}</td>
+                                <td class="border-0">{{ expense.mood }}</td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="6" class="text-center py-5 fw-bold text-muted">No transactions found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. ANALYTICS SECTION -->
+        <div class="tab-pane fade" id="tab-analytics">
+            <div class="card p-4 border-0 shadow-sm rounded-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="m-0 fw-bold text-primary"><i class="fas fa-chart-line me-2"></i>Advanced User Analytics</h5>
+                    <select id="adminRangeSelect" class="form-select form-select-sm w-auto rounded-pill px-3 shadow-sm">
+                        <option value="daily">DAILY VIEW</option>
+                        <option value="weekly">WEEKLY VIEW</option>
+                        <option value="monthly" selected>MONTHLY VIEW</option>
+                    </select>
+                </div>
+                <div class="row g-4">
+                    <!-- Spending Trend -->
+                    <div class="col-md-8">
+                        <div class="p-3 rounded-4 bg-light mb-4">
+                            <h6 class="fw-bold mb-3 small text-muted text-uppercase">Spending Trend</h6>
+                            <canvas id="adminLineChart" style="max-height: 300px;"></canvas>
+                        </div>
+                        <div class="row g-4">
+                            <!-- Histogram -->
+                            <div class="col-md-6">
+                                <div class="p-3 rounded-4 bg-light">
+                                    <h6 class="fw-bold mb-3 small text-muted text-uppercase">Spending Frequency</h6>
+                                    <canvas id="adminHistogramChart" style="max-height: 250px;"></canvas>
+                                </div>
+                            </div>
+                            <!-- Scatter Plot -->
+                            <div class="col-md-6">
+                                <div class="p-3 rounded-4 bg-light">
+                                    <h6 class="fw-bold mb-3 small text-muted text-uppercase">Spending Patterns</h6>
+                                    <canvas id="adminScatterChart" style="max-height: 250px;"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Category & Bank Analysis -->
+                    <div class="col-md-4">
+                        <div class="p-3 rounded-4 bg-light mb-4">
+                            <h6 class="fw-bold mb-3 small text-muted text-uppercase">Category Distribution</h6>
+                            <canvas id="adminPieChart" style="max-height: 250px;"></canvas>
+                        </div>
+                        <div class="p-3 rounded-4 bg-light mb-4">
+                            <h6 class="fw-bold mb-3 small text-muted text-uppercase">Category Comparison</h6>
+                            <canvas id="adminBarChart" style="max-height: 250px;"></canvas>
+                        </div>
+                        <div class="p-3 rounded-4 bg-light">
+                            <h6 class="fw-bold mb-3 small text-muted text-uppercase">Bank-wise Analysis</h6>
+                            <canvas id="adminBankChart" style="max-height: 250px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. CHALLENGES SECTION -->
+        <div class="tab-pane fade" id="tab-challenges">
+            <div class="card p-4 border-0 shadow-sm rounded-4">
+                <h5 class="fw-bold mb-4 text-primary"><i class="fas fa-bullseye me-2"></i>Challenge Progress</h5>
+                <div class="row g-3">
+                    {% for ch in user_challenges %}
+                    <div class="col-md-4 col-lg-3">
+                        <div class="p-3 rounded-4 border {{ 'bg-success text-white border-0 shadow' if ch.claimed else 'bg-light' }} h-100 transition-all">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="m-0 fw-bold small">{{ ch.name }}</h6>
+                                {% if ch.claimed %}
+                                <i class="fas fa-check-circle"></i>
+                                {% endif %}
+                            </div>
+                            <div class="progress mb-2" style="height: 6px; background: rgba(0,0,0,0.05); border-radius: 10px;">
+                                <div class="progress-bar {{ 'bg-white' if ch.claimed else 'bg-primary' }}" style="width: {{ (ch.current / ch.target) * 100 }}%; border-radius: 10px;"></div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="fw-bold">{{ ch.current }}/{{ ch.target }}</small>
+                                <span class="badge {{ 'bg-white text-success' if ch.claimed else ('bg-primary' if ch.completed else 'bg-secondary') }} rounded-pill x-small">
+                                    {{ 'CLAIMED' if ch.claimed else ('READY' if ch.completed else 'IN PROGRESS') }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. BADGES SECTION -->
+        <div class="tab-pane fade" id="tab-badges">
+            <div class="card p-4 border-0 shadow-sm rounded-4">
+                <h5 class="fw-bold mb-4 text-primary"><i class="fas fa-award me-2"></i>Achievement Badges</h5>
+                <div class="row g-4 justify-content-center">
+                    {% set badge_icons = {
+                        'beginner': 'fa-seedling text-success',
+                        'saver': 'fa-piggy-bank text-warning',
+                        'consistent_user': 'fa-calendar-check text-info',
+                        'budget_master': 'fa-crown text-primary',
+                        'tracker_pro': 'fa-trophy text-danger',
+                        'smart_spender': 'fa-brain text-info',
+                        'daily_tracker': 'fa-check-circle text-success',
+                        'weekly_champion': 'fa-medal text-warning',
+                        'monthly_master': 'fa-star text-primary',
+                        'finance_expert': 'fa-user-tie text-dark'
+                    } %}
+                    {% set all_badge_ids = ['beginner', 'saver', 'consistent_user', 'budget_master', 'tracker_pro', 'smart_spender', 'daily_tracker', 'weekly_champion', 'monthly_master', 'finance_expert'] %}
+                    
+                    {% for bid in all_badge_ids %}
+                        {% set badge = user_badges | selectattr('id', 'equalto', bid) | first %}
+                        <div class="col-6 col-md-3 col-lg-2 text-center">
+                            <div class="badge-wrapper p-4 rounded-4 {{ 'bg-light shadow-sm' if badge else 'opacity-25 grayscale' }} transition-all border">
+                                <div class="badge-icon mb-3">
+                                    <i class="fas {{ badge_icons[bid] }} fa-3x"></i>
+                                </div>
+                                <div class="small fw-bold text-dark mb-2">{{ bid.replace('_', ' ').title() }}</div>
+                                {% if badge %}
+                                <div class="mt-1"><span class="badge bg-success rounded-pill x-small">UNLOCKED</span></div>
+                                <small class="text-muted x-small d-block mt-1">Earned: {{ badge.earned_date }}</small>
+                                {% else %}
+                                <div class="mt-1"><span class="badge bg-secondary rounded-pill x-small">LOCKED</span></div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .nav-pills .nav-link.active { background-color: rgba(255,255,255,0.2) !important; color: #fff !important; }
+    .nav-pills .nav-link:hover { background-color: rgba(255,255,255,0.1); }
+    .x-small { font-size: 0.65rem; padding: 0.35em 0.65em; }
+    .grayscale { filter: grayscale(1); }
+    .bg-primary-subtle { background-color: rgba(0, 100, 224, 0.1); }
+    .transition-all { transition: all 0.3s ease; }
+    .bg-light { background-color: var(--bg) !important; }
+    [data-theme="dark"] .bg-light { background-color: rgba(255,255,255,0.05) !important; }
+    .badge-wrapper:hover { transform: translateY(-5px); }
+</style>
+
+<script>
+    let adminCharts = {};
+
+    function initAdminCharts(data) {
+        const isDark = document.body.getAttribute('data-theme') === 'dark';
+        const textColor = isDark ? '#e9ecef' : '#1a1d21';
+        const mutedColor = isDark ? '#adb5bd' : '#65676b';
+        const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+
+        Object.values(adminCharts).forEach(c => c && c.destroy());
+
+        const commonOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { 
+                legend: { labels: { color: textColor, font: { weight: '600', family: 'Inter' } } },
+                tooltip: { backgroundColor: isDark ? '#16213e' : '#fff', titleColor: textColor, bodyColor: textColor, borderColor: gridColor, borderWidth: 1 }
+            },
+            scales: {
+                x: { ticks: { color: mutedColor }, grid: { display: false } },
+                y: { ticks: { color: mutedColor }, grid: { color: gridColor } }
+            }
+        };
+
+        // 1. Line Chart (Trend)
+        adminCharts.line = new Chart(document.getElementById('adminLineChart'), {
+            type: 'line',
+            data: {
+                labels: data.trend.labels,
+                datasets: [{
+                    label: 'Spending',
+                    data: data.trend.data,
+                    borderColor: '#0064e0',
+                    backgroundColor: 'rgba(0, 100, 224, 0.1)',
+                    fill: true, tension: 0.4, pointRadius: 4
+                }]
+            },
+            options: commonOptions
+        });
+
+        // 2. Pie Chart (Distribution)
+        adminCharts.pie = new Chart(document.getElementById('adminPieChart'), {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(data.categories),
+                datasets: [{
+                    data: Object.values(data.categories),
+                    backgroundColor: ['#0064e0', '#ffba00', '#00a400', '#fa3e3e', '#6610f2', '#fd7e14', '#20c997', '#e83e8c'],
+                    borderWidth: 0
+                }]
+            },
+            options: { ...commonOptions, cutout: '70%' }
+        });
+
+        // 3. Bar Chart (Comparison)
+        adminCharts.bar = new Chart(document.getElementById('adminBarChart'), {
+            type: 'bar',
+            data: {
+                labels: Object.keys(data.categories),
+                datasets: [{
+                    label: 'Amount by Category',
+                    data: Object.values(data.categories),
+                    backgroundColor: '#00a400',
+                    borderRadius: 6
+                }]
+            },
+            options: commonOptions
+        });
+
+        // 4. Histogram (Frequency)
+        adminCharts.histogram = new Chart(document.getElementById('adminHistogramChart'), {
+            type: 'bar',
+            data: {
+                labels: Object.keys(data.frequency || {}),
+                datasets: [{
+                    label: 'Count of Expenses',
+                    data: Object.values(data.frequency || {}),
+                    backgroundColor: '#ffba00',
+                    borderRadius: 4
+                }]
+            },
+            options: { ...commonOptions, scales: { ...commonOptions.scales, x: { ...commonOptions.scales.x, grid: { display: false } } } }
+        });
+
+        // 5. Scatter Plot (Patterns)
+        adminCharts.scatter = new Chart(document.getElementById('adminScatterChart'), {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'Expense vs Hour',
+                    data: data.patterns,
+                    backgroundColor: '#3d8bfd'
+                }]
+            },
+            options: {
+                ...commonOptions,
+                scales: {
+                    x: { title: { display: true, text: 'Hour of Day', color: textColor }, ticks: { color: mutedColor }, grid: { color: gridColor } },
+                    y: { title: { display: true, text: 'Amount (₹)', color: textColor }, ticks: { color: mutedColor }, grid: { color: gridColor } }
+                }
+            }
+        });
+
+        // 6. Bank Chart
+        adminCharts.bank = new Chart(document.getElementById('adminBankChart'), {
+            type: 'bar',
+            data: {
+                labels: Object.keys(data.bank_spending || {}),
+                datasets: [{
+                    label: 'Bank Analysis',
+                    data: Object.values(data.bank_spending || {}),
+                    backgroundColor: '#6610f2',
+                    borderRadius: 8
+                }]
+            },
+            options: commonOptions
+        });
+    }
+
+    function loadAdminData(range = 'monthly') {
+        fetch(`/api/dashboard_data?range=${range}&user_id={{ user.id }}`)
+            .then(r => r.json())
+            .then(data => initAdminCharts(data));
+    }
+
+    document.getElementById('adminRangeSelect').addEventListener('change', (e) => loadAdminData(e.target.value));
+    
+    (function() {
+        loadAdminData('monthly');
+    })();
+
+    window.updateChartsTheme = () => loadAdminData(document.getElementById('adminRangeSelect').value);
+</script>
+{% endblock %}

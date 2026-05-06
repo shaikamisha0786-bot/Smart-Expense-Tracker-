@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block auth_content %}
+<div class="container d-flex justify-content-center align-items-center vh-100">
+    <div class="card p-5 shadow-lg border-0" style="width: 450px; border-radius: 25px;">
+        <div id="auth-toasts" class="toast-container position-absolute top-0 end-0 p-3"></div>
+        <div class="text-center mb-5">
+            <div class="bg-primary text-white d-inline-block p-3 rounded-circle mb-3 shadow-sm">
+                <i class="fas fa-wallet fa-2x"></i>
+            </div>
+            <h2 class="fw-bold m-0">Welcome</h2>
+            <p class="text-muted small">Log in to manage your finances</p>
+        </div>
+        <form method="POST" onsubmit="return validateLogin()">
+            <div class="mb-4">
+                <label class="form-label small fw-bold text-muted">Username</label>
+                <div class="input-group">
+                    <span class="input-group-text border-0 bg-light"><i class="fas fa-user text-muted"></i></span>
+                    <input type="text" name="username" id="username" class="form-control form-control-lg border-0 bg-light" placeholder="Enter your username">
+                </div>
+                <div id="username-error" class="text-danger x-small mt-1" style="display: none;">Please fill out this field.</div>
+            </div>
+            <div class="mb-4">
+                <label class="form-label small fw-bold text-muted">Password</label>
+                <div class="input-group">
+                    <span class="input-group-text border-0 bg-light"><i class="fas fa-lock text-muted"></i></span>
+                    <input type="password" name="password" id="password" class="form-control form-control-lg border-0 bg-light" placeholder="••••••••">
+                </div>
+                <div id="password-error" class="text-danger x-small mt-1" style="display: none;">Please fill out this field.</div>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 py-3 rounded-pill fw-bold shadow-sm mb-4">
+                Sign In <i class="fas fa-arrow-right ms-2"></i>
+            </button>
+        </form>
+
+<script>
+function validateLogin() {
+    let isValid = true;
+    const username = document.getElementById('username');
+    const password = document.getElementById('password');
+    const userError = document.getElementById('username-error');
+    const passError = document.getElementById('password-error');
+
+    userError.style.display = 'none';
+    passError.style.display = 'none';
+
+    if (!username.value.trim()) {
+        userError.style.display = 'block';
+        isValid = false;
+    }
+    if (!password.value) {
+        passError.style.display = 'block';
+        isValid = false;
+    }
+    return isValid;
+}
+</script>
+
+<style>
+.x-small { font-size: 0.75rem; font-weight: 600; }
+</style>
+        <div class="text-center">
+            <p class="text-muted small m-0">Don't have an account? <a href="{{ url_for('register') }}" class="text-primary fw-bold text-decoration-none">Create one</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

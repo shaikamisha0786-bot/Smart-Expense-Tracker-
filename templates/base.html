@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Budget AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #f0f2f5;
+            --sidebar-bg: #1a1d21;
+            --card-bg: #ffffff;
+            --text-primary: #1a1d21;
+            --text-muted: #65676b;
+            --border-color: #e4e6eb;
+            --accent-primary: #0064e0;
+            --accent-success: #00a400;
+            --accent-danger: #fa3e3e;
+            --accent-warning: #ffba00;
+            --nav-link: #b0b3b8;
+            --nav-active: #ffffff;
+            --nav-hover: rgba(255,255,255,0.1);
+        }
+        [data-theme="dark"] {
+            --bg: #1a1a2e;
+            --sidebar-bg: #16213e;
+            --card-bg: #16213e;
+            --text-primary: #e9ecef;
+            --text-muted: #adb5bd;
+            --border-color: #0f3460;
+            --accent-primary: #3d8bfd;
+            --accent-success: #4ec9b0;
+            --accent-danger: #f44747;
+            --accent-warning: #cca700;
+            --nav-link: #ced4da;
+            --nav-active: #ffffff;
+            --nav-hover: rgba(255,255,255,0.15);
+        }
+        body { 
+            background-color: var(--bg); 
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            overflow-x: hidden;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+        .sidebar { 
+            min-height: 100vh; 
+            background: var(--sidebar-bg); 
+            color: white;
+            box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+            position: fixed;
+            z-index: 1000;
+            width: inherit;
+        }
+        .sidebar h4 { color: white !important; }
+        .main-content {
+            margin-left: 16.666667%; /* matches col-md-2 */
+            transition: margin-left 0.3s;
+        }
+        .sidebar a { 
+            color: var(--nav-link); 
+            text-decoration: none; 
+            display: flex;
+            align-items: center;
+            padding: 14px 24px; 
+            transition: 0.3s; 
+            border-radius: 12px; 
+            margin: 8px 16px; 
+            font-weight: 600;
+        }
+        .sidebar a:hover { 
+            background: var(--nav-hover); 
+            color: white !important;
+            transform: translateX(5px);
+        }
+        .sidebar a.active { 
+            background: var(--accent-primary); 
+            color: white !important; 
+            box-shadow: 0 4px 12px rgba(0,100,224,0.3);
+        }
+        .card { 
+            border: 1px solid var(--border-color); 
+            background: var(--card-bg); 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08); 
+            margin-bottom: 24px; 
+            border-radius: 16px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: var(--text-primary);
+        }
+        .card h5, .card h6 {
+            color: var(--text-primary) !important;
+            margin-bottom: 1.25rem;
+        }
+        .card:hover { 
+            transform: translateY(-4px); 
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+        .form-control, .form-select {
+            background-color: var(--bg);
+            color: var(--text-primary) !important;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 10px 16px;
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: var(--bg);
+            color: var(--text-primary) !important;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 4px rgba(0, 100, 224, 0.1);
+        }
+        .form-label {
+            color: var(--text-primary) !important;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .text-muted {
+            color: var(--text-muted) !important;
+        }
+        .bg-light {
+            background-color: rgba(0, 0, 0, 0.03) !important;
+            color: var(--text-primary) !important;
+        }
+        [data-theme="dark"] .bg-light {
+            background-color: rgba(255, 255, 255, 0.05) !important;
+        }
+        .table {
+            color: var(--text-primary) !important;
+            background-color: transparent !important;
+        }
+        .table thead th {
+            color: var(--text-muted) !important;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            border-bottom: 2px solid var(--border-color) !important;
+            background-color: rgba(0, 0, 0, 0.02) !important;
+        }
+        [data-theme="dark"] .table thead th {
+            background-color: rgba(255, 255, 255, 0.02) !important;
+        }
+        .table td {
+            color: var(--text-primary) !important;
+            border-bottom: 1px solid var(--border-color) !important;
+            background-color: transparent !important;
+        }
+        .table-hover tbody tr:hover {
+            background-color: rgba(0, 100, 224, 0.05) !important;
+            color: var(--text-primary) !important;
+        }
+        [data-theme="dark"] .table-hover tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.05) !important;
+        }
+        .badge.bg-light {
+            background-color: var(--border-color) !important;
+            color: var(--text-primary) !important;
+        }
+        .text-dark {
+            color: var(--text-primary) !important;
+        }
+        .theme-toggle {
+            cursor: pointer;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            background: var(--nav-hover);
+            transition: 0.3s;
+        }
+        .btn-primary { 
+            background-color: var(--accent-primary); 
+            border: none; 
+            border-radius: 10px;
+            padding: 10px 24px;
+            font-weight: 600;
+        }
+        .toast {
+            border-radius: 12px;
+            border: none;
+            backdrop-filter: blur(10px);
+        }
+        @media (max-width: 768px) {
+            .sidebar { width: 100%; min-height: auto; position: relative; }
+            .main-content { margin-left: 0; }
+        }
+    </style>
+</head>
+<body data-theme="light">
+    <div id="flash-data" data-messages='{{ get_flashed_messages(with_categories=true) | tojson | safe }}'></div>
+    {% if session.get('user_id') %}
+    <div class="container-fluid p-0">
+        <div class="row g-0">
+            <div class="col-md-2 sidebar d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-center px-4 py-5">
+                    <h4 class="m-0 text-white fw-bold"><i class="fas fa-rocket me-2 text-primary"></i>SmartAI</h4>
+                    <div class="theme-toggle" id="themeToggle">
+                        <i class="fas fa-moon"></i>
+                    </div>
+                </div>
+                <div class="nav-links flex-grow-1">
+                    <a href="{{ url_for('dashboard') }}" class="nav-item active" id="nav-home"><i class="fas fa-home me-3"></i> HOME</a>
+                    <a href="#accounts" class="nav-item" id="nav-accounts"><i class="fas fa-university me-3"></i> MY ACCOUNTS</a>
+                    <a href="#history" class="nav-item" id="nav-history"><i class="fas fa-history me-3"></i> HISTORY</a>
+                    <a href="#analytics" class="nav-item" id="nav-analytics"><i class="fas fa-chart-bar me-3"></i> ANALYTICS</a>
+                    <a href="#challenges" class="nav-item" id="nav-challenges"><i class="fas fa-bullseye me-3"></i> CHALLENGES</a>
+                    <a href="#badges" class="nav-item" id="nav-badges"><i class="fas fa-award me-3"></i> BADGES</a>
+                    {% if session.get('role') == 'admin' %}
+                    <a href="{{ url_for('admin_panel') }}" class="text-warning"><i class="fas fa-shield-alt me-3"></i> ADMIN</a>
+                    {% endif %}
+                </div>
+                <div class="mt-auto pb-4">
+                    <a href="{{ url_for('logout') }}" class="text-danger"><i class="fas fa-power-off me-3"></i> Logout</a>
+                </div>
+            </div>
+            <div class="col-md-10 main-content p-4">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="auth-wrapper">
+        {% block auth_content %}{% endblock %}
+    </div>
+    {% endif %}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const showToast = (message, category = 'success', containerId = 'global-toasts') => {
+            const container = document.getElementById(containerId) || document.body;
+            const toastEl = document.createElement('div');
+            toastEl.className = `toast align-items-center text-bg-${category === 'danger' ? 'danger' : (category === 'success' ? 'success' : 'primary')} border-0 shadow-lg mb-3`;
+            toastEl.setAttribute('role', 'alert');
+            toastEl.setAttribute('aria-live', 'assertive');
+            toastEl.setAttribute('aria-atomic', 'true');
+            toastEl.innerHTML = `
+                <div class="d-flex p-2">
+                    <div class="toast-body fw-medium"><i class="fas ${category === 'success' ? 'fa-check-circle' : 'fa-info-circle'} me-2"></i>${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>`;
+            container.appendChild(toastEl);
+            const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+            toast.show();
+            toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+        };
+
+        (function() {
+            // Theme toggle logic
+            const themeToggle = document.getElementById('themeToggle');
+            const body = document.body;
+            const currentTheme = localStorage.getItem('theme') || 'light';
+            
+            body.setAttribute('data-theme', currentTheme);
+            if (themeToggle) {
+                themeToggle.innerHTML = currentTheme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+                themeToggle.addEventListener('click', () => {
+                    const newTheme = body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+                    body.setAttribute('data-theme', newTheme);
+                    localStorage.setItem('theme', newTheme);
+                    themeToggle.innerHTML = newTheme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+                    if (window.updateChartsTheme) window.updateChartsTheme(newTheme);
+                });
+            }
+
+            // Sidebar highlight and smooth scroll
+            const sections = ['accounts', 'history', 'analytics', 'challenges', 'badges'];
+            const navItems = {
+                'home': document.getElementById('nav-home'),
+                'accounts': document.getElementById('nav-accounts'),
+                'history': document.getElementById('nav-history'),
+                'analytics': document.getElementById('nav-analytics'),
+                'challenges': document.getElementById('nav-challenges'),
+                'badges': document.getElementById('nav-badges')
+            };
+
+            window.addEventListener('scroll', () => {
+                let current = 'home';
+                sections.forEach(s => {
+                    const el = document.getElementById(s);
+                    if (el && window.pageYOffset >= el.offsetTop - 150) {
+                        current = s;
+                    }
+                });
+                Object.values(navItems).forEach(item => item && item.classList.remove('active'));
+                if (navItems[current]) navItems[current].classList.add('active');
+            });
+
+            // Smooth scroll for nav items
+            Object.keys(navItems).forEach(key => {
+                const item = navItems[key];
+                if (item && key !== 'home') {
+                    item.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const targetId = item.getAttribute('href').substring(1);
+                        const targetEl = document.getElementById(targetId);
+                        if (targetEl) {
+                            window.scrollTo({
+                                top: targetEl.offsetTop - 20,
+                                behavior: 'smooth'
+                            });
+                        }
+                    });
+                }
+            });
+
+            // Flash messages
+            try {
+                const msgs = JSON.parse(document.getElementById('flash-data').dataset.messages || '[]');
+                msgs.forEach(([category, message]) => {
+                    let target = 'global-toasts';
+                    const m = message.toLowerCase();
+                    if (m.includes('expense added')) target = 'add-expense-toasts';
+                    else if (m.includes('expense deleted')) target = 'history-toasts';
+                    else if (m.includes('budget updated')) target = 'budget-toasts';
+                    else if (m.includes('badge unlocked')) target = 'badge-toasts';
+                    else if (m.includes('login successful') || m.includes('account created')) target = 'auth-toasts';
+                    else if (m.includes('challenge completed')) target = 'challenges-toasts';
+                    
+                    showToast(message, category, target);
+                });
+            } catch(e) {}
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block auth_content %}
+<div class="container d-flex justify-content-center align-items-center vh-100">
+    <div class="card p-5 shadow-lg border-0" style="width: 450px; border-radius: 25px;">
+        <div id="auth-toasts" class="toast-container position-absolute top-0 end-0 p-3"></div>
+        <div class="text-center mb-5">
+            <div class="bg-success text-white d-inline-block p-3 rounded-circle mb-3 shadow-sm">
+                <i class="fas fa-user-plus fa-2x"></i>
+            </div>
+            <h2 class="fw-bold m-0">Join Us</h2>
+            <p class="text-muted small">Start tracking your smart budget today</p>
+        </div>
+        <form method="POST">
+            <div class="mb-4">
+                <label class="form-label small fw-bold text-muted">Username</label>
+                <div class="input-group">
+                    <span class="input-group-text border-0 bg-light"><i class="fas fa-user text-muted"></i></span>
+                    <input type="text" name="username" class="form-control form-control-lg border-0 bg-light" placeholder="Choose a username" required>
+                </div>
+            </div>
+            <div class="mb-4">
+                <label class="form-label small fw-bold text-muted">Password</label>
+                <div class="input-group">
+                    <span class="input-group-text border-0 bg-light"><i class="fas fa-lock text-muted"></i></span>
+                    <input type="password" name="password" class="form-control form-control-lg border-0 bg-light" placeholder="••••••••" required>
+                </div>
+            </div>
+            <div class="mb-4">
+                <label class="form-label small fw-bold text-muted">Account Role</label>
+                <div class="input-group">
+                    <span class="input-group-text border-0 bg-light"><i class="fas fa-user-tag text-muted"></i></span>
+                    <select name="role" class="form-select form-select-lg border-0 bg-light">
+                        <option value="user">User</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-success w-100 py-3 rounded-pill fw-bold shadow-sm mb-4">
+                Create Account <i class="fas fa-check-circle ms-2"></i>
+            </button>
+        </form>
+        <div class="text-center">
+            <p class="text-muted small m-0">Already have an account? <a href="{{ url_for('login') }}" class="text-success fw-bold text-decoration-none">Sign in here</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
